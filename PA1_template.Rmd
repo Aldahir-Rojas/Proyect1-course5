@@ -1,25 +1,138 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
 output: 
-  html_document:
-    keep_md: true
+html_document:
+keep_md: true
 ---
 
 
 ## Loading and preprocessing the data
-
+```{r}
+data<-read.csv("./data/activity.csv")
+data<-data[!is.na(data$steps),]
+dat2<-with(data, tapply(steps,date,sum))
+dat2<-data.frame(steps=dat2, date=rownames(dat2))
+dat2$date<-as.Date(dat2$date)
+```
 
 
 ## What is mean total number of steps taken per day?
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(formattable)
+```
 
+
+```{r scatterplot, fig.height=4}
+
+dat2 %>% ggplot()+ 
+  aes(x=date,y=steps)+
+  geom_bar(stat = "identity", color="black", fill="green", alpha=0.4)+
+  ggtitle("Total de pasos por dia")+
+  xlab("Date")+ylab("Steps")
+
+
+```
+Media
+
+```{r }
+media<-with(data[data$steps!=0,],tapply(steps,date,mean))
+media<-data.frame(Steps=formattable(media, digits=2, format="f"), Date=names(media))
+
+print(media)
+mediana<-with(data[data$steps!=0,],tapply(steps,date,median))
+mediana<-data.frame(Steps=mediana, Date=names(mediana))
+print(mediana)
+
+```
 
 
 ## What is the average daily activity pattern?
+```{r }
+dat2 %>% ggplot()+
+  aes(x=date, y=steps)+
+  geom_line()+
+  geom_point()+
+  xlab("Date")+
+  ylab("Steps")+
+  ggtitle("Promedio de pasos dados por dia")
+```
 
+
+
+```{r}
+
+maxin<-which.max(data$steps)
+maxinter<-data[maxin,3]
+print(maxinter)
+```
 
 
 ## Imputing missing values
+```{r}
+data2<-read.csv("./data/activity.csv")
+num<-nrow(data2[is.na(data2$steps),])
+num
+
+table(data2[is.na(data2$steps),]$date)
+table(data2[!is.na(data2$steps),]$date)
+print(nrow(data2))
+```
+
+
+
+```{r}
+data2[is.na(data2$steps),]$steps<-mean(media$Steps)
+
+dat3<-with(data2, tapply(steps,date,sum))
+dat3<-data.frame(steps=dat3, date=rownames(dat3))
+dat3$date<-as.Date(dat3$date)
+
+
+dat3 %>% ggplot()+ 
+  aes(x=date,y=steps)+
+  geom_bar(stat = "identity", color="black", fill="green", alpha=0.4)+
+  ggtitle("Total de pasos por dia")+
+  xlab("Date")+ylab("Steps")
+```
 
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+
+dataf2<-data
+
+for (i  in 1:nrow(dataf2)) {
+            
+    dataf2$date[i]<-weekdays(as.Date(dataf2$date[i]))
+    
+}
+
+for (i in 1:nrow(dataf2)) {
+      
+    if(dataf2$date[i]=="sabado" | dataf2$date[i]=="domingo" ){
+      
+      dataf2$date[i]<-"weekend"
+      
+    }else {
+      dataf2$date[i]<-"weekday"
+    }
+      
+  
+    
+    
+}
+
+dataf2$date<-as.factor(dataf2$date)
+dataf2<-dataf2[dataf2$steps!=0,]
+
+dataf2 %>% ggplot()+
+  aes(x=interval, y=steps)+
+  geom_line()+
+  facet_wrap(date~.,ncol=1)
+```
+
+
+
